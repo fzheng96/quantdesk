@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuantDesk — backtesting and paper trading, explained from zero</title>
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: #0e1117; color: #e7eaf0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
+}
+main { max-width: 980px; margin: 0 auto; padding: 40px 20px 48px; }
+header h1 { margin: 0 0 6px; font-size: 34px; font-weight: 700; }
+header h1 .accent { color: #5ab0f2; }
+header .meta { color: #8b93a7; font-size: 15px; margin: 0; max-width: 720px; }
+section {
+  margin-top: 28px; background: #171c26; border: 1px solid #262d3b;
+  border-radius: 10px; padding: 22px 24px;
+}
+h2 {
+  margin: 0 0 14px; font-size: 13px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; color: #aeb6c8;
+}
+p { margin: 0 0 12px; }
+p:last-child { margin-bottom: 0; }
+a { color: #5ab0f2; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.strategy { background: #1d2330; border-radius: 8px; padding: 16px 18px; margin-bottom: 12px; }
+.strategy:last-child { margin-bottom: 0; }
+.strategy h3 { margin: 0 0 6px; font-size: 16px; font-weight: 650; }
+.strategy h3 .key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px; color: #5ab0f2; background: #0e1117;
+  border: 1px solid #262d3b; border-radius: 5px; padding: 2px 7px; margin-right: 8px;
+}
+.strategy p { color: #c8cedb; font-size: 14px; }
+.strategy .ts-link { font-size: 13px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 7px 10px; text-align: right; border: 1px solid #262d3b; white-space: nowrap; }
+th { color: #aeb6c8; font-weight: 600; }
+th:first-child, td:first-child { text-align: left; }
+td:first-child { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #5ab0f2; }
+tr.best td { background: #1d2330; }
+.note { color: #8b93a7; font-size: 12px; margin-top: 10px; }
+.linkgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.linkcard {
+  display: block; background: #1d2330; border: 1px solid #262d3b; border-radius: 8px;
+  padding: 14px 16px; color: #e7eaf0;
+}
+.linkcard:hover { border-color: #5ab0f2; text-decoration: none; }
+.linkcard .title { font-weight: 650; font-size: 15px; color: #5ab0f2; }
+.linkcard .sub { font-size: 12px; color: #8b93a7; margin-top: 3px; }
+.guide-cta {
+  display: block; background: #1d2330; border: 1px solid #5ab0f2; border-radius: 10px;
+  padding: 18px 20px; margin-top: 28px; color: #e7eaf0;
+}
+.guide-cta:hover { text-decoration: none; background: #232b3b; }
+.guide-cta .title { font-size: 18px; font-weight: 700; color: #5ab0f2; }
+.guide-cta .sub { font-size: 14px; color: #aeb6c8; margin-top: 4px; }
+footer {
+  margin-top: 32px; padding-top: 16px; border-top: 1px solid #262d3b;
+  color: #8b93a7; font-size: 12px;
+}
+footer p { margin: 0 0 8px; }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+<h1>Quant<span class="accent">Desk</span></h1>
+<p class="meta">A small, honest toolkit for studying trading strategies with historical data and pretend money — and for learning why most trading ideas are worse than they look.</p>
+</header>
+
+<section>
+<h2>What this is</h2>
+<p>QuantDesk is a free command-line program that tests simple, decades-old trading strategies against real historical stock prices, subtracting assumed (deliberately simple) trading costs, so you can see how they <em>would have</em> performed. It also includes a paper-trading mode: a pretend brokerage account that starts with $100,000 of imaginary money, so you can follow a strategy day by day without risking a cent. There is deliberately no way to connect it to real money — it is a learning and research tool, not a trading product.</p>
+<p>Never used a terminal or traded a stock? Start with the <a href="guide.html">beginner's guide</a> — it assumes nothing.</p>
+</section>
+
+<section>
+<h2>What each strategy believes</h2>
+
+<div class="strategy">
+<h3><span class="key">tsmom</span>Time-series momentum</h3>
+<p>The belief: stocks that have been rising tend to keep rising for a while, because news spreads gradually and investors react slowly, then pile in. This strategy holds every stock whose own trailing one-year return (skipping the most recent month) is positive, in equal slices. It has historically worked across many markets and decades, which is why it is the default here. It fails badly at sharp V-shaped turning points — it is still holding after a peak and still in cash after a bottom — and it bleeds money in choppy, sideways markets where the signal flips back and forth and every flip pays trading costs.</p>
+<p class="ts-link"><a href="tearsheets/tsmom.html">Full tearsheet →</a></p>
+</div>
+
+<div class="strategy">
+<h3><span class="key">xsmom</span>Cross-sectional momentum</h3>
+<p>The belief: it is not whether a stock went up that matters, but whether it went up <em>more than its peers</em> — relative winners over the past 3–12 months tend to stay winners. This strategy ranks the universe by trailing return and holds only the top five names. Because it always holds the five best-ranked stocks no matter what, it stays fully invested through bear markets, holding the "least bad" losers, and it gets hit hardest right after a crash, when the previous losers rebound fastest and the portfolio owns exactly the wrong things. Holding only five names also means one bad company can do real damage, and frequent rank changes mean high turnover and high costs.</p>
+<p class="ts-link"><a href="tearsheets/xsmom.html">Full tearsheet →</a></p>
+</div>
+
+<div class="strategy">
+<h3><span class="key">meanrev</span>Mean reversion</h3>
+<p>The belief: over a few days, prices overshoot — a sudden sharp drop is often panic or forced selling rather than real news, and the price tends to bounce back. This strategy buys stocks whose five-day return is unusually negative compared to their own recent history, and sells once the move normalizes. Its failure mode is the famous "falling knife": sometimes a crash <em>is</em> real news (an earnings collapse, a fraud) and there is no bounce, only further losses — and the strategy has no way to tell the difference. It also loses persistently in strongly trending markets, and when only one stock is signaling, the entire portfolio concentrates into precisely the most distressed name.</p>
+<p class="ts-link"><a href="tearsheets/meanrev.html">Full tearsheet →</a></p>
+</div>
+
+<div class="strategy">
+<h3><span class="key">dma</span>Dual moving average</h3>
+<p>The belief: you do not need to predict anything — just stay invested while the trend is up and step aside when it turns down. This strategy holds a stock while its 50-day average price is above its 200-day average price. Its real value historically has been avoiding the deepest, longest crashes, which matter more to long-run compounding than any single good day. The price of that protection: it is always late (by the time the averages cross, part of the move is already over, in both directions), and in range-bound markets the averages cross back and forth repeatedly, paying trading costs each time for no benefit.</p>
+<p class="ts-link"><a href="tearsheets/dma.html">Full tearsheet →</a></p>
+</div>
+
+</section>
+
+<section>
+<h2>The four strategies, head to head</h2>
+<p>The table below is the output of <code>quantdesk compare --start 2018-01-01</code>, run on the same 20 large US stocks from January 2018 through June 2026, net of assumed trading costs. Every column is explained in plain English in the <a href="guide.html#tearsheet">guide</a>.</p>
+<div class="scroll">
+<table>
+<tr><th>Strategy</th><th>CAGR</th><th>Ann. vol</th><th>Sharpe</th><th>Sortino</th><th>Max DD</th><th>Calmar</th><th>Hit rate</th></tr>
+<tr><td>dma</td><td>13.96%</td><td>14.63%</td><td>0.97</td><td>1.36</td><td>29.27%</td><td>0.48</td><td>56.37%</td></tr>
+<tr><td>meanrev</td><td>17.01%</td><td>24.94%</td><td>0.75</td><td>1.12</td><td>35.74%</td><td>0.48</td><td>50.89%</td></tr>
+<tr><td>tsmom</td><td>16.52%</td><td>15.36%</td><td>1.07</td><td>1.53</td><td>29.27%</td><td>0.56</td><td>56.79%</td></tr>
+<tr><td>xsmom</td><td>28.43%</td><td>25.76%</td><td>1.10</td><td>1.59</td><td>37.39%</td><td>0.76</td><td>55.99%</td></tr>
+</table>
+</div>
+<p class="note">Simulated research results from free historical data (20 assets, 2018-01-01 to 2026-06-11), net of assumed commission and slippage. These numbers are backtests, not real trading, and they flatter: this period was unusually kind to US megacap stocks, the ticker list is chosen with hindsight, and free data has errors. Past performance does not predict future results. Nothing on this page is investment advice.</p>
+</section>
+
+<section>
+<h2>Tearsheets — one full report per strategy</h2>
+<p>A tearsheet is a one-page report card for a strategy: growth of $1, worst losing stretches, month-by-month returns, and what trading costs ate. Each one below is a real run on real historical data.</p>
+<div class="linkgrid">
+<a class="linkcard" href="tearsheets/tsmom.html"><span class="title">tsmom</span><span class="sub"> &nbsp;Time-series momentum</span></a>
+<a class="linkcard" href="tearsheets/xsmom.html"><span class="title">xsmom</span><span class="sub"> &nbsp;Cross-sectional momentum</span></a>
+<a class="linkcard" href="tearsheets/meanrev.html"><span class="title">meanrev</span><span class="sub"> &nbsp;Mean reversion</span></a>
+<a class="linkcard" href="tearsheets/dma.html"><span class="title">dma</span><span class="sub"> &nbsp;Dual moving average</span></a>
+</div>
+</section>
+
+<a class="guide-cta" href="guide.html">
+<span class="title">New to all of this? Read the guide.</span>
+<span class="sub">What "paper trading" means, how to read every chart and number on a tearsheet, your first ten minutes at the terminal, and how to avoid fooling yourself. No prior knowledge assumed.</span>
+</a>
+
+<footer>
+<p>All performance figures on this site are simulated research results produced from free historical price data, net of assumed commission and slippage. Simulated performance is hypothetical: it reflects no actual positions, ignores taxes, and routinely overstates what live trading would have achieved. Past performance does not predict future results. Nothing here is investment advice or a recommendation to buy or sell any security. Do not trade real money based on output from this software.</p>
+<p>QuantDesk is open source under the MIT license: <a href="https://github.com/fzheng96/quantdesk">github.com/fzheng96/quantdesk</a></p>
+</footer>
+
+</main>
+</body>
+</html>
