@@ -36,12 +36,12 @@ quantdesk demo
 ```
 
 `quantdesk demo` downloads daily prices for a default universe of 20 large US
-stocks (plus SPY as the benchmark) from Stooq's free CSV endpoint, runs every
-strategy net of costs, prints a comparison table, and writes a tearsheet to
-`reports/demo.html`. The first run is slow because it populates the local
-cache; later runs reuse it. If Stooq cannot be reached, the demo still
-finishes on seeded synthetic random walks, with every table and the tearsheet
-title loudly labeled `SYNTHETIC DATA`.
+stocks (plus SPY as the benchmark) from the free data sources described under
+[Data](#data), runs every strategy net of costs, prints a comparison table,
+and writes a tearsheet to `reports/demo.html`. The first run is slow because
+it populates the local cache; later runs reuse it. If no source can be
+reached, the demo still finishes on seeded synthetic random walks, with every
+table and the tearsheet title loudly labeled `SYNTHETIC DATA`.
 
 To run the tests:
 
@@ -148,7 +148,7 @@ a "dip" is actually new information, crossovers whipsaw in sideways markets.
 
 ```
 quantdesk/
-  data.py        Stooq CSV downloader and SQLite price cache
+  data.py        Yahoo/Stooq downloaders, source chaining, SQLite price cache
   strategies.py  Signal generators that emit daily target weights
   risk.py        Volatility targeting, position caps, drawdown guard
   backtest.py    Execution-lag engine, cost model, walk-forward analysis
@@ -189,25 +189,32 @@ or below 1.0 before any risk overlay is applied.
 
 ## Data
 
-Prices come from Stooq's free daily CSV endpoint and are cached in
-`data/cache.sqlite`, so repeated runs do not refetch. The cache path is
-relative to the directory you run from — a run from elsewhere starts a fresh
-cache — and `fetch` prints the resolved path it used. Tickers are written in
-their plain exchange spelling (for example `BRK-B`); the data layer maps them
-to Stooq's format (`brk-b.us`). Gaps are forward-filled up to 3 days; leading
-missing history is dropped per ticker. When the source has no new bars for an
-already-cached ticker (a weekend or holiday run, or an outage), the cached
-history is served instead of erroring, and a single failing ticker is dropped
-with a warning rather than aborting the rest. Free data has errors and
-missing sessions — treat results accordingly.
+Prices come from two free sources tried in order: Yahoo Finance's unofficial
+v8 chart API first, then Stooq's daily CSV endpoint as a fallback. Both are
+keyless; both can throttle or change without notice, which is exactly why
+there are two. Yahoo's close column uses the adjusted close (comparable to
+Stooq's split-adjusted series); its open/high/low/volume stay unadjusted,
+which is fine here because every computation downstream consumes closes only.
+Bars are cached in `data/cache.sqlite`, so repeated runs do not refetch. The
+cache path is relative to the directory you run from — a run from elsewhere
+starts a fresh cache — and `fetch` prints the resolved path it used. Tickers
+are written in their plain exchange spelling (for example `BRK-B`); the data
+layer maps them to each source's format (`BRK-B` for Yahoo, `brk-b.us` for
+Stooq). Gaps are forward-filled up to 3 days; leading missing history is
+dropped per ticker. When the sources have no new bars for an already-cached
+ticker (a weekend or holiday run, or an outage), the cached history is served
+instead of erroring, and a single failing ticker is dropped with a warning
+rather than aborting the rest. Free data has errors and missing sessions —
+treat results accordingly.
 
-Stooq sometimes fronts the CSV endpoint with a browser-verification page,
-which this client does not attempt to bypass; requests then fail with a
-`DataError` naming the problem. Tickers with cached history fall back to the
-cache when that happens; only when no requested ticker has any usable data
-does the error propagate. The `demo` command falls back to clearly labeled
-synthetic data in that case, and `compare --synthetic` runs offline by
-design. All other commands report the error and exit.
+Both endpoints sometimes front their data with rate limits or
+browser-verification pages, which this client does not attempt to bypass;
+when every source fails, requests raise a `DataError` naming each source's
+problem. Tickers with cached history fall back to the cache when that
+happens; only when no requested ticker has any usable data does the error
+propagate. The `demo` command falls back to clearly labeled synthetic data in
+that case, and `compare --synthetic` runs offline by design. All other
+commands report the error and exit.
 
 ## Paper trading
 

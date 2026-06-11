@@ -1,21 +1,26 @@
 """Market data sourcing and caching.
 
-Three pieces live here:
+The pieces that live here:
 
+- ``YahooSource``: daily OHLCV bars from the unofficial Yahoo chart API.
 - ``StooqSource``: daily OHLCV bars from the free Stooq CSV endpoint.
+- ``ChainedSource``: tries sources in order until one yields bars.
 - ``PriceCache``: a SQLite-backed bar cache keyed by (ticker, date).
 - ``get_prices``: cache-first assembly of a wide close-price frame.
 
-Network access happens only inside ``StooqSource``. Everything else operates
-on an injected source object, which is how the test suite stays fully
-offline.
+Network access happens only inside the source classes. Everything else
+operates on an injected source object, which is how the test suite stays
+fully offline.
 """
 
 from __future__ import annotations
 
+import calendar
 import io
+import json
 import sqlite3
 import time
+from collections.abc import Sequence
 from contextlib import closing
 from datetime import date, timedelta
 from pathlib import Path
@@ -27,7 +32,9 @@ import pandas as pd
 __all__ = [
     "DataError",
     "OHLCVSource",
+    "YahooSource",
     "StooqSource",
+    "ChainedSource",
     "PriceCache",
     "get_prices",
     "OHLCV_COLUMNS",
@@ -45,6 +52,8 @@ MAX_FFILL_DAYS: int = 3
 DEFAULT_CACHE_PATH = Path("data") / "cache.sqlite"
 
 _STOOQ_URL = "https://stooq.com/q/d/l/"
+
+_YAHOO_URL = "https://query1.finance.yahoo.com/v8/finance/chart/"
 
 
 class DataError(Exception):
@@ -186,6 +195,173 @@ def _parse_stooq_csv(text: str, ticker: str) -> pd.DataFrame:
     return bars.sort_index()
 
 
+class YahooSource:
+    """Daily OHLCV bars from the unofficial Yahoo Finance chart API.
+
+    The v8 chart endpoint needs no key but is unofficial: Yahoo can
+    rate-limit it (HTTP 429) or reshape the payload without notice. The
+    close column uses Yahoo's adjusted close when present, which makes it
+    comparable to Stooq's split-adjusted series; open, high, low, and
+    volume stay unadjusted, which is acceptable here because the rest of
+    the pipeline consumes closes only. Bar timestamps are converted to US
+    Eastern trading dates, so non-US listings are out of scope.
+    """
+
+    TIMEOUT_SECONDS: float = 20.0
+    MAX_RETRIES: int = 2
+
+    def __init__(
+        self, client: httpx.Client | None = None, retry_delay: float = 1.0
+    ) -> None:
+        """An injected client replaces the default one and brings its own
+        timeout configuration; ``retry_delay`` is the pause in seconds
+        between retry attempts."""
+        self._client = client
+        self._retry_delay = retry_delay
+
+    def fetch_ohlcv(self, ticker: str, start: date, end: date) -> pd.DataFrame:
+        """Fetch daily bars for ``[start, end]`` inclusive.
+
+        Raises ``DataError`` when the response is malformed, empty, or all
+        attempts fail, and ``ValueError`` when ``start`` is after ``end``.
+        """
+        if start > end:
+            raise ValueError(f"start {start} is after end {end}")
+        symbol = self._symbol(ticker)
+        params = {
+            # Yahoo treats period2 as exclusive, so one extra day keeps the
+            # requested end date inside the window.
+            "period1": str(calendar.timegm(start.timetuple())),
+            "period2": str(calendar.timegm((end + timedelta(days=1)).timetuple())),
+            "interval": "1d",
+        }
+        bars = _parse_yahoo_json(self._get(symbol, params), ticker)
+        return bars.loc[str(start) : str(end)]
+
+    @staticmethod
+    def _symbol(ticker: str) -> str:
+        # Yahoo wants plain uppercase US symbols ("BRK-B"), so the Stooq
+        # ".us" suffix is stripped when callers share one ticker spelling.
+        symbol = ticker.strip().upper()
+        return symbol.removesuffix(".US")
+
+    def _get(self, symbol: str, params: dict[str, str]) -> str:
+        last_error: Exception | None = None
+        for attempt in range(self.MAX_RETRIES + 1):
+            if attempt > 0 and self._retry_delay > 0:
+                time.sleep(self._retry_delay)
+            try:
+                response = self._request(symbol, params)
+            except httpx.HTTPError as exc:
+                last_error = exc
+                continue
+            if response.status_code >= 500 or response.status_code == 429:
+                # Server failures and rate limits are transient often enough
+                # to retry; other client errors below fail fast.
+                last_error = DataError(
+                    f"Yahoo returned HTTP {response.status_code}"
+                )
+                continue
+            if response.status_code != 200:
+                raise DataError(
+                    f"Yahoo returned HTTP {response.status_code} for symbol "
+                    f"{symbol!r}"
+                )
+            return response.text
+        raise DataError(
+            f"Yahoo request for symbol {symbol!r} failed after "
+            f"{self.MAX_RETRIES + 1} attempts: {last_error}"
+        ) from last_error
+
+    def _request(self, symbol: str, params: dict[str, str]) -> httpx.Response:
+        if self._client is not None:
+            return self._client.get(_YAHOO_URL + symbol, params=params)
+        with httpx.Client(
+            timeout=self.TIMEOUT_SECONDS,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; quantdesk/0.1)"},
+        ) as client:
+            return client.get(_YAHOO_URL + symbol, params=params)
+
+
+def _parse_yahoo_json(text: str, ticker: str) -> pd.DataFrame:
+    try:
+        payload = json.loads(text)
+    except ValueError as exc:
+        raise DataError(
+            f"Yahoo response for {ticker!r} is not JSON; the endpoint may be "
+            "rate-limiting or serving an interstitial page right now"
+        ) from exc
+    chart = payload.get("chart") or {}
+    error = chart.get("error")
+    if error:
+        raise DataError(
+            f"Yahoo returned an error for {ticker!r}: "
+            f"{error.get('code')}: {error.get('description')}"
+        )
+    results = chart.get("result") or []
+    if not results:
+        raise DataError(f"Yahoo returned no result for {ticker!r}")
+    result = results[0]
+    timestamps = result.get("timestamp") or []
+    if not timestamps:
+        raise DataError(f"Yahoo returned no rows for {ticker!r}")
+    indicators = result.get("indicators") or {}
+    quote = (indicators.get("quote") or [{}])[0]
+    missing = [column for column in OHLCV_COLUMNS if not quote.get(column)]
+    if missing:
+        raise DataError(
+            f"Yahoo response for {ticker!r} is missing columns {missing}"
+        )
+    bars = pd.DataFrame(
+        {
+            column: pd.to_numeric(pd.Series(quote[column]), errors="coerce")
+            for column in OHLCV_COLUMNS
+        }
+    )
+    adjclose = (indicators.get("adjclose") or [{}])[0].get("adjclose")
+    if adjclose is not None and len(adjclose) == len(timestamps):
+        bars["close"] = pd.to_numeric(pd.Series(adjclose), errors="coerce")
+    # Daily bar timestamps sit at the US market open in UTC, so converting
+    # through US Eastern recovers the trading date.
+    bars.index = pd.DatetimeIndex(
+        pd.to_datetime(timestamps, unit="s", utc=True)
+        .tz_convert("America/New_York")
+        .normalize()
+        .tz_localize(None),
+        name="date",
+    )
+    if bars["close"].isna().all():
+        raise DataError(f"Yahoo response for {ticker!r} has no numeric close prices")
+    bars = bars[~bars.index.duplicated(keep="last")]
+    return bars.sort_index()
+
+
+class ChainedSource:
+    """Tries each source in order until one returns bars.
+
+    Only ``DataError`` falls through to the next source; programming errors
+    propagate immediately. When every source fails, the raised ``DataError``
+    names each source's failure so an outage is diagnosable from a single
+    message.
+    """
+
+    def __init__(self, sources: Sequence[OHLCVSource]) -> None:
+        if not sources:
+            raise ValueError("sources must not be empty")
+        self._sources = tuple(sources)
+
+    def fetch_ohlcv(self, ticker: str, start: date, end: date) -> pd.DataFrame:
+        errors: list[str] = []
+        for source in self._sources:
+            try:
+                return source.fetch_ohlcv(ticker, start, end)
+            except DataError as exc:
+                errors.append(f"{type(source).__name__}: {exc}")
+        raise DataError(
+            f"all sources failed for {ticker!r} ({'; '.join(errors)})"
+        )
+
+
 class PriceCache:
     """SQLite-backed daily-bar cache.
 
@@ -315,7 +491,11 @@ def get_prices(
         raise ValueError(f"start {start} is after end {end}")
     if not tickers:
         raise ValueError("tickers must not be empty")
-    active_source: OHLCVSource = source if source is not None else StooqSource()
+    active_source: OHLCVSource = (
+        source
+        if source is not None
+        else ChainedSource((YahooSource(), StooqSource()))
+    )
     active_cache = cache if cache is not None else PriceCache()
     closes: dict[str, pd.Series] = {}
     failures: dict[str, DataError] = {}

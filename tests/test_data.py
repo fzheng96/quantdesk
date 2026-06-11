@@ -15,7 +15,16 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quantdesk.data import DataError, PriceCache, StooqSource, get_prices
+import json
+
+from quantdesk.data import (
+    ChainedSource,
+    DataError,
+    PriceCache,
+    StooqSource,
+    YahooSource,
+    get_prices,
+)
 
 STOOQ_CSV = (
     "Date,Open,High,Low,Close,Volume\n"
@@ -429,3 +438,141 @@ class TestStooqSource:
         with pytest.raises(ValueError):
             source.fetch_ohlcv("AAPL", date(2020, 1, 3), date(2020, 1, 2))
         assert attempts == []
+
+
+# Two trading days whose bar timestamps sit at the 14:30 UTC market open,
+# which must come back as the Eastern trading dates 2020-01-02 and
+# 2020-01-03. The adjusted closes deliberately differ from the raw closes so
+# tests can prove which one the parser keeps.
+YAHOO_JSON = json.dumps(
+    {
+        "chart": {
+            "result": [
+                {
+                    "timestamp": [1577975400, 1578061800],
+                    "indicators": {
+                        "quote": [
+                            {
+                                "open": [100.0, 100.5],
+                                "high": [101.0, 102.0],
+                                "low": [99.0, 100.0],
+                                "close": [100.5, 101.5],
+                                "volume": [1000, 1100],
+                            }
+                        ],
+                        "adjclose": [{"adjclose": [100.0, 101.0]}],
+                    },
+                }
+            ],
+            "error": None,
+        }
+    }
+)
+
+
+def _yahoo_with(handler) -> YahooSource:
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    return YahooSource(client=client, retry_delay=0.0)
+
+
+class TestYahooSource:
+    def test_parses_chart_json(self) -> None:
+        source = _yahoo_with(lambda request: httpx.Response(200, text=YAHOO_JSON))
+        bars = source.fetch_ohlcv("aapl", date(2020, 1, 2), date(2020, 1, 3))
+        assert list(bars.index) == [
+            pd.Timestamp("2020-01-02"),
+            pd.Timestamp("2020-01-03"),
+        ]
+        assert bars["close"].tolist() == [100.0, 101.0]
+        assert bars["open"].tolist() == [100.0, 100.5]
+        assert list(bars.columns) == ["open", "high", "low", "close", "volume"]
+
+    def test_requests_uppercase_symbol_without_stooq_suffix(self) -> None:
+        seen: list[str] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen.append(str(request.url))
+            return httpx.Response(200, text=YAHOO_JSON)
+
+        source = _yahoo_with(handler)
+        source.fetch_ohlcv("brk-b.us", date(2020, 1, 2), date(2020, 1, 3))
+        assert "/v8/finance/chart/BRK-B?" in seen[0]
+
+    def test_error_payload_raises(self) -> None:
+        payload = json.dumps(
+            {
+                "chart": {
+                    "result": None,
+                    "error": {"code": "Not Found", "description": "No data found"},
+                }
+            }
+        )
+        source = _yahoo_with(lambda request: httpx.Response(200, text=payload))
+        with pytest.raises(DataError, match="Not Found"):
+            source.fetch_ohlcv("ZZZZ", date(2020, 1, 2), date(2020, 1, 3))
+
+    def test_non_json_response_raises(self) -> None:
+        source = _yahoo_with(
+            lambda request: httpx.Response(200, text="<html>verify</html>")
+        )
+        with pytest.raises(DataError, match="not JSON"):
+            source.fetch_ohlcv("AAPL", date(2020, 1, 2), date(2020, 1, 3))
+
+    def test_rate_limit_retries_then_fails(self) -> None:
+        attempts: list[int] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            attempts.append(1)
+            return httpx.Response(429, text="too many requests")
+
+        source = _yahoo_with(handler)
+        with pytest.raises(DataError, match="429"):
+            source.fetch_ohlcv("AAPL", date(2020, 1, 2), date(2020, 1, 3))
+        assert len(attempts) == YahooSource.MAX_RETRIES + 1
+
+    def test_missing_quote_columns_raise(self) -> None:
+        payload = json.dumps(
+            {
+                "chart": {
+                    "result": [
+                        {
+                            "timestamp": [1577975400],
+                            "indicators": {"quote": [{"close": [100.5]}]},
+                        }
+                    ],
+                    "error": None,
+                }
+            }
+        )
+        source = _yahoo_with(lambda request: httpx.Response(200, text=payload))
+        with pytest.raises(DataError, match="missing columns"):
+            source.fetch_ohlcv("AAPL", date(2020, 1, 2), date(2020, 1, 3))
+
+
+class TestChainedSource:
+    def test_falls_back_to_next_source(self) -> None:
+        bars = make_bars("2020-01-02", 5, seed=7)
+        failing = FakeSource({})
+        working = FakeSource({"AAPL": bars})
+        chain = ChainedSource((failing, working))
+        out = chain.fetch_ohlcv("AAPL", date(2020, 1, 2), date(2020, 1, 10))
+        assert not out.empty
+        assert failing.calls and working.calls
+
+    def test_aggregates_all_failures(self) -> None:
+        chain = ChainedSource((FakeSource({}), FakeSource({})))
+        with pytest.raises(DataError, match="all sources failed"):
+            chain.fetch_ohlcv("AAPL", date(2020, 1, 2), date(2020, 1, 10))
+
+    def test_programming_errors_propagate(self) -> None:
+        class Exploding:
+            def fetch_ohlcv(self, ticker: str, start: date, end: date):
+                raise RuntimeError("bug, not a data problem")
+
+        chain = ChainedSource((Exploding(), FakeSource({})))
+        with pytest.raises(RuntimeError):
+            chain.fetch_ohlcv("AAPL", date(2020, 1, 2), date(2020, 1, 10))
+
+    def test_empty_sources_rejected(self) -> None:
+        with pytest.raises(ValueError):
+            ChainedSource(())
