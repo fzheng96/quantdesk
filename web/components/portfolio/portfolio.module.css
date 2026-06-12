@@ -1,0 +1,113 @@
+/* Styles for the Portfolio page: tables, the equity chart, and the reset
+   flow. Same tearsheet palette as the rest of the app. */
+
+.chartSvg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.sparklineSvg {
+  width: 100%;
+  max-width: 16rem;
+  height: auto;
+  display: block;
+}
+
+.axisText {
+  fill: #8b93a7;
+  font-size: 10px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  margin-top: 0.75rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+}
+
+.table th,
+.table td {
+  text-align: right;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid #262d3b;
+  white-space: nowrap;
+}
+
+.table th:first-child,
+.table td:first-child {
+  text-align: left;
+}
+
+.table th {
+  color: #8b93a7;
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tickerCell {
+  font-weight: 700;
+}
+
+.up {
+  color: #4cc38a;
+}
+
+.down {
+  color: #e5484d;
+}
+
+.sideBuy {
+  color: #4cc38a;
+  font-weight: 600;
+}
+
+.sideSell {
+  color: #e5484d;
+  font-weight: 600;
+}
+
+.emptyNote {
+  color: #8b93a7;
+  margin-top: 0.75rem;
+  font-size: 0.92rem;
+}
+
+.framingNote {
+  color: #8b93a7;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.resetZone {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.resetWarning {
+  color: #e3c27d;
+  font-size: 0.88rem;
+}
+
+.dangerButton {
+  background: transparent;
+  border: 1px solid #e5484d;
+  border-radius: 8px;
+  color: #e5484d;
+  font-size: 0.88rem;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+
+.dangerButton:hover {
+  background: rgba(229, 72, 77, 0.12);
+}

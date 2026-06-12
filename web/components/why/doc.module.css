@@ -1,0 +1,117 @@
+/* Prose/document styles shared by the Why page's static sections and the
+   Learn page. Adapted from the static site's guide styling. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.pageHeader h1 {
+  margin: 0 0 0.3rem;
+  font-size: 1.8rem;
+}
+
+.pageHeader p {
+  margin: 0;
+}
+
+.section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.4rem 1.5rem;
+}
+
+.kicker {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.15rem;
+}
+
+.section h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.35rem;
+}
+
+.section h3 {
+  margin: 1.4rem 0 0.45rem;
+  font-size: 1rem;
+}
+
+.section p {
+  margin: 0 0 0.8rem;
+}
+
+.section p:last-child {
+  margin-bottom: 0;
+}
+
+.section ul,
+.section ol {
+  margin: 0 0 0.8rem;
+  padding-left: 1.4rem;
+}
+
+.section li {
+  margin: 0.25rem 0;
+}
+
+.toc {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+}
+
+.toc ol {
+  margin: 0.4rem 0 0;
+  padding-left: 1.4rem;
+}
+
+.toc li {
+  margin: 0.2rem 0;
+}
+
+.callout {
+  background: var(--card);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 0.7rem 1rem;
+  margin: 0 0 0.8rem;
+  font-size: 0.9rem;
+}
+
+.calloutWarn {
+  background: var(--card);
+  border-left: 3px solid #e2b34c;
+  border-radius: 0 8px 8px 0;
+  padding: 0.7rem 1rem;
+  margin: 0 0 0.8rem;
+  font-size: 0.9rem;
+}
+
+.gloss dt {
+  font-weight: 650;
+  margin-top: 0.9rem;
+  color: var(--text);
+}
+
+.gloss dt:first-child {
+  margin-top: 0;
+}
+
+.gloss dd {
+  margin: 0.15rem 0 0;
+  color: var(--text-dim);
+  font-size: 0.92rem;
+}
+
+.fineprint {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}

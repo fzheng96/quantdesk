@@ -1,0 +1,426 @@
+/* Styles for the Today page and shared primitives (InfoTip, MetricCard).
+   The palette mirrors the tearsheet: bg #0e1117, panels #171c26, borders
+   #262d3b, cards #1d2330, text #e7eaf0 / #8b93a7, accent #5ab0f2. */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pageTitle {
+  font-size: 1.15rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #e7eaf0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.disclaimer {
+  color: #8b93a7;
+  font-size: 0.8rem;
+  margin-top: 0.75rem;
+}
+
+.banner {
+  background: #1d2330;
+  border: 1px solid #b08a3e;
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  color: #e3c27d;
+  font-size: 0.85rem;
+}
+
+/* ---- InfoTip ---- */
+
+.tip {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.tipButton {
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  border: 1px solid #262d3b;
+  background: #171c26;
+  color: #8b93a7;
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tipButton:hover,
+.tipButton:focus-visible {
+  color: #5ab0f2;
+  border-color: #5ab0f2;
+}
+
+.tipBody {
+  display: none;
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 0.4rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16rem;
+  max-width: 78vw;
+  background: #171c26;
+  border: 1px solid #262d3b;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  color: #e7eaf0;
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.45;
+  text-transform: none;
+  letter-spacing: normal;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.tip:hover .tipBody,
+.tip:focus-within .tipBody,
+.tipOpen .tipBody {
+  display: block;
+}
+
+/* ---- Metric cards ---- */
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+
+.metricCard {
+  background: #1d2330;
+  border: 1px solid #262d3b;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+}
+
+.metricLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #8b93a7;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.metricValue {
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: #e7eaf0;
+  margin-top: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.metricSub {
+  color: #8b93a7;
+  font-size: 0.8rem;
+  margin-top: 0.15rem;
+}
+
+.toneUp {
+  color: #4cc38a;
+}
+
+.toneDown {
+  color: #e5484d;
+}
+
+/* ---- Setup flow ---- */
+
+.setupCard {
+  background: #1d2330;
+  border: 1px solid #262d3b;
+  border-radius: 10px;
+  padding: 1.5rem;
+  max-width: 38rem;
+  margin: 0 auto;
+}
+
+.setupQuestion {
+  margin-top: 1.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.setupNote {
+  color: #8b93a7;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.budgetRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.budgetInput {
+  background: #0e1117;
+  border: 1px solid #262d3b;
+  border-radius: 8px;
+  color: #e7eaf0;
+  font-size: 1.1rem;
+  padding: 0.5rem 0.75rem;
+  width: 11rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.budgetInput:focus {
+  outline: none;
+  border-color: #5ab0f2;
+}
+
+.riskOptions {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.riskOption {
+  display: block;
+  background: #171c26;
+  border: 1px solid #262d3b;
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  cursor: pointer;
+}
+
+.riskOptionActive {
+  border-color: #5ab0f2;
+  background: #18222e;
+}
+
+.riskOption input {
+  margin-right: 0.5rem;
+  accent-color: #5ab0f2;
+}
+
+.riskName {
+  font-weight: 600;
+}
+
+.riskBlurb {
+  color: #8b93a7;
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.riskVol {
+  color: #8b93a7;
+  font-size: 0.75rem;
+  margin-top: 0.2rem;
+}
+
+.errorText {
+  color: #e5484d;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+/* ---- Buttons ---- */
+
+.primaryButton {
+  background: #5ab0f2;
+  border: none;
+  border-radius: 8px;
+  color: #0e1117;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  margin-top: 1.25rem;
+}
+
+.primaryButton:hover {
+  background: #7cc0f5;
+}
+
+.primaryButton:disabled {
+  background: #2c3547;
+  color: #8b93a7;
+  cursor: not-allowed;
+}
+
+.ghostButton {
+  background: transparent;
+  border: 1px solid #262d3b;
+  border-radius: 8px;
+  color: #8b93a7;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+}
+
+.ghostButton:hover {
+  color: #e7eaf0;
+  border-color: #8b93a7;
+}
+
+/* ---- Order list ---- */
+
+.orderRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #262d3b;
+  flex-wrap: wrap;
+}
+
+.orderRow:last-of-type {
+  border-bottom: none;
+}
+
+.sideBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border-radius: 5px;
+  padding: 0.15rem 0.45rem;
+  min-width: 3rem;
+  text-align: center;
+}
+
+.sideBuy {
+  background: rgba(76, 195, 138, 0.15);
+  color: #4cc38a;
+  border: 1px solid rgba(76, 195, 138, 0.4);
+}
+
+.sideSell {
+  background: rgba(229, 72, 77, 0.12);
+  color: #e5484d;
+  border: 1px solid rgba(229, 72, 77, 0.4);
+}
+
+.orderMain {
+  font-size: 0.95rem;
+}
+
+.orderTicker {
+  font-weight: 700;
+}
+
+.orderAmount {
+  color: #8b93a7;
+  font-size: 0.85rem;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.successNote {
+  color: #4cc38a;
+  font-size: 0.9rem;
+  margin-top: 0.6rem;
+}
+
+.targetsDetails {
+  margin-top: 1rem;
+  color: #8b93a7;
+  font-size: 0.85rem;
+}
+
+.targetsDetails summary {
+  cursor: pointer;
+  color: #5ab0f2;
+}
+
+.targetsTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.6rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.targetsTable th,
+.targetsTable td {
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid #262d3b;
+  font-size: 0.85rem;
+}
+
+.targetsTable th {
+  color: #8b93a7;
+  font-weight: 500;
+}
+
+/* ---- Sparkline / chart cards ---- */
+
+.chartCard {
+  background: #1d2330;
+  border: 1px solid #262d3b;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #8b93a7;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex-wrap: wrap;
+}
+
+.legend {
+  display: flex;
+  gap: 1rem;
+  margin-left: auto;
+  font-size: 0.78rem;
+  text-transform: none;
+  letter-spacing: normal;
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #8b93a7;
+  font-variant-numeric: tabular-nums;
+}
+
+.legendSwatch {
+  width: 0.7rem;
+  height: 0.18rem;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.loadingCard {
+  color: #8b93a7;
+  font-size: 0.95rem;
+}
+
+.planHeaderRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.planAsOf {
+  margin-left: auto;
+  color: #8b93a7;
+  font-size: 0.8rem;
+}

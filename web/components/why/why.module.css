@@ -1,0 +1,276 @@
+/* Styles for the Why-page widgets: backtest status, charts, metric cards,
+   and the "?" explainers. Doc-style prose sections use doc.module.css. */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+/* --- status / banners ------------------------------------------------- */
+
+.statusCard {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--text-dim);
+}
+
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  animation: whySpin 0.9s linear infinite;
+}
+
+@keyframes whySpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorCard {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid #e2b34c;
+  border-radius: 0 10px 10px 0;
+  padding: 1.1rem 1.25rem;
+}
+
+.errorCard p {
+  margin: 0 0 0.75rem;
+}
+
+.buttonRow {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.button {
+  background: var(--accent);
+  color: #0b1320;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:hover {
+  filter: brightness(1.1);
+}
+
+.buttonGhost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.buttonGhost:hover {
+  border-color: var(--accent);
+}
+
+.demoBanner {
+  background: var(--card);
+  border-left: 3px solid #e2b34c;
+  border-radius: 0 8px 8px 0;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+/* --- window note & disclaimers ---------------------------------------- */
+
+.windowNote {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.windowNote strong {
+  color: var(--text);
+}
+
+.windowNote p {
+  margin: 0 0 0.55rem;
+}
+
+.windowNote p:last-child {
+  margin-bottom: 0;
+}
+
+.disclaimer {
+  background: var(--panel);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.sourceNote {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+/* --- charts ------------------------------------------------------------ */
+
+.figure {
+  margin: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1rem 0.75rem;
+}
+
+.chartTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chartSvg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.figcaption {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-top: 0.45rem;
+}
+
+.legend {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 0.35rem;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legendSwatch {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* --- metric cards ------------------------------------------------------ */
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.metricCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.8rem 0.9rem;
+}
+
+.metricLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.metricValue {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-top: 0.2rem;
+  color: var(--text);
+}
+
+.metricSub {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  margin-top: 0.2rem;
+}
+
+/* --- "?" explainer ------------------------------------------------------ */
+
+.infoTip {
+  position: relative;
+  display: inline-flex;
+}
+
+.infoTipButton {
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex: none;
+}
+
+.infoTipButton:hover,
+.infoTipButton:focus-visible {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.infoTipBody {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: max-content;
+  max-width: min(280px, 78vw);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  color: var(--text);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
