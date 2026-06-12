@@ -9,3 +9,6 @@ reports/
 .pytest_cache/
 *.egg-info/
 .vercel
+web/node_modules
+web/.next
+web/tsconfig.tsbuildinfo

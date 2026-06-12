@@ -5,6 +5,42 @@ cache, a handful of classic systematic strategies, a cost-aware backtest engine
 with walk-forward analysis, simple risk overlays, a paper-trading broker, and
 self-contained HTML tearsheets — all driven from one CLI.
 
+## Use it in the browser
+
+The `web/` directory contains a browser app built on the same engine, aimed at
+someone with no quant background. It recommends **simulated** trades into a
+paper portfolio funded with pretend money; no real money is ever involved, and
+nothing in it is investment advice.
+
+- **Today** — answer two questions (pretend budget, risk level) and see the
+  exact paper orders the strategy blend would place today, in plain English,
+  with every number explained.
+- **Portfolio** — track the paper portfolio over time against simply having
+  bought SPY on the same start date.
+- **Why** — the evidence: a backtest of the blend over the last five years of
+  free market data, computed live in your browser, costs included, with the
+  caveats spelled out.
+- **Learn** — a plain-language guide to every screen and every term.
+
+The TypeScript engine in `web/lib/engine/` is a port of the Python engine in
+`quantdesk/`, held to it by parity tests: fixtures produced from the Python
+engine must match the TypeScript output within 1e-8 relative tolerance
+(`web/test/parity.test.ts`), including the same lookahead-canary convention.
+Prices come from the same free sources (Yahoo first, Stooq fallback); when
+both are unreachable the app falls back to a clearly labeled built-in demo
+dataset.
+
+To run it (requires Node 18+):
+
+```bash
+cd web
+npm install
+npm run dev        # http://localhost:3000
+```
+
+`npm test` runs the engine, parity, API, and store suites; `npm run build`
+makes the production build.
+
 ## Disclaimer
 
 **This is a research and learning tool, nothing more.**
